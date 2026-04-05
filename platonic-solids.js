@@ -137,35 +137,27 @@
       dotMat.opacity = 0.6 * p2;
     }
 
-    /* --- Scroll-triggered build (uses GSAP if available) --- */
-    function initScrollBuild() {
+    /* --- Build animation: play once when in view --- */
+    function initBuild() {
       if (window.gsap && window.ScrollTrigger) {
         gsap.registerPlugin(ScrollTrigger);
 
         const proxy = { progress: 0 };
         gsap.to(proxy, {
           progress: 1,
-          duration: 1.5,
+          duration: 1.8,
           ease: 'power2.out',
+          onUpdate: function () {
+            updateBuild(proxy.progress);
+          },
+          onComplete: function () {
+            built = true;
+          },
           scrollTrigger: {
             trigger: container,
-            start: 'top 85%',
-            end: 'top 35%',
-            toggleActions: 'play none none reverse',
+            start: 'top 90%',
+            once: true,
             id: 'platonic-build-' + solidType,
-            onUpdate: function (self) {
-              updateBuild(self.progress);
-            },
-            onLeaveBack: function () {
-              updateBuild(0);
-              built = false;
-            },
-            onEnter: function () {
-              built = false;
-            },
-            onComplete: function () {
-              built = true;
-            },
           },
         });
       } else {
@@ -279,7 +271,7 @@
     visObserver.observe(container);
 
     /* Start */
-    initScrollBuild();
+    initBuild();
     animate();
   }
 
