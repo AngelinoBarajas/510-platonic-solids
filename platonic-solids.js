@@ -3,7 +3,8 @@
    Target: .process_platonic-embed[data-solid]
    Dependencies: Three.js (loaded below)
    Safe to remove: Yes — delete script tag from footer
-   Changed: 2026-04-05 — Initial build
+   Changed: 2026-04-09 — Fix: removed double animate() call on init;
+                          reuse window.THREE if already loaded (globe.js)
    ============================================ */
 (function () {
   if (window.__tenPlatonicInit) return;
@@ -11,7 +12,7 @@
 
   const THREE_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
 
-  /* --- Load Three.js if not already present --- */
+  /* --- Load Three.js only if not already present (globe.js may have loaded it) --- */
   function loadThree(callback) {
     if (window.THREE) { callback(); return; }
     const s = document.createElement('script');
@@ -102,9 +103,7 @@
     scene.add(dots);
 
     /* --- Build animation state --- */
-    let buildProgress = 0;
     let built = false;
-    const totalEdgeVerts = edgeGeo.getAttribute('position').count;
 
     /* Store original edge positions for build reveal */
     const origEdgePos = edgeGeo.getAttribute('position').array.slice();
@@ -120,7 +119,6 @@
     dotMat.opacity = 0;
 
     function updateBuild(progress) {
-      /* Edges expand from center */
       const p = Math.min(1, Math.max(0, progress));
       const posArr = edgeGeo.getAttribute('position').array;
       for (let i = 0; i < origEdgePos.length; i++) {
@@ -128,10 +126,8 @@
       }
       edgeGeo.getAttribute('position').needsUpdate = true;
 
-      /* Edge opacity ramps up */
       edgeMat.opacity = 0.35 * p;
 
-      /* Face and dots fade in during second half */
       const p2 = Math.max(0, (p - 0.5) * 2);
       faceMat.opacity = 0.03 * p2;
       dotMat.opacity = 0.6 * p2;
@@ -161,7 +157,6 @@
           },
         });
       } else {
-        /* Fallback: just build immediately */
         updateBuild(1);
         built = true;
       }
@@ -225,16 +220,15 @@
     resizeObserver.observe(container);
 
     /* --- Render loop --- */
-    let animId;
+    let animId = null;
+
     function animate() {
       animId = requestAnimationFrame(animate);
 
       if (!isDragging) {
-        /* Apply damping to drag velocity */
         rotVel.x *= damping;
         rotVel.y *= damping;
 
-        /* Idle rotation when velocity is negligible */
         if (Math.abs(rotVel.x) < 0.0001 && Math.abs(rotVel.y) < 0.0001) {
           rotVel.x = 0;
           rotVel.y = 0;
@@ -243,7 +237,6 @@
         }
       }
 
-      /* Apply rotation to all objects together */
       wireframe.rotation.x += rotVel.x;
       wireframe.rotation.y += rotVel.y;
       faceMesh.rotation.copy(wireframe.rotation);
@@ -252,16 +245,16 @@
       renderer.render(scene, camera);
     }
 
-    /* --- Visibility optimization --- */
+    /* --- Visibility observer — SOLE trigger for animate() --- */
     const visObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            if (!animId) animate();
+            if (!animId) animate(); // start only if not already running
           } else {
             if (animId) {
               cancelAnimationFrame(animId);
-              animId = null;
+              animId = null; // fully reset so re-entry works cleanly
             }
           }
         });
@@ -270,9 +263,8 @@
     );
     visObserver.observe(container);
 
-    /* Start */
+    /* --- DO NOT call animate() here — visObserver is the sole trigger --- */
     initBuild();
-    animate();
   }
 
   /* --- Initialize all embeds --- */
