@@ -63,7 +63,7 @@
     const edgeMat = new THREE.LineBasicMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.7,
       linewidth: 1,
     });
     const wireframe = new THREE.LineSegments(edgeGeo, edgeMat);
@@ -73,7 +73,7 @@
     const faceMat = new THREE.MeshBasicMaterial({
       color: 0xffffff,
       transparent: true,
-      opacity: 0.03,
+      opacity: 0.25,
       side: THREE.DoubleSide,
     });
     const faceMesh = new THREE.Mesh(geometry, faceMat);
@@ -96,7 +96,7 @@
       color: 0xffffff,
       size: 0.06,
       transparent: true,
-      opacity: 0.6,
+      opacity: 0.9,
       sizeAttenuation: true,
     });
     const dots = new THREE.Points(dotGeo, dotMat);
@@ -126,11 +126,11 @@
       }
       edgeGeo.getAttribute('position').needsUpdate = true;
 
-      edgeMat.opacity = 0.35 * p;
+      edgeMat.opacity = 0.7 * p;
 
       const p2 = Math.max(0, (p - 0.5) * 2);
-      faceMat.opacity = 0.03 * p2;
-      dotMat.opacity = 0.6 * p2;
+      faceMat.opacity = 0.25 * p2;
+      dotMat.opacity = 0.9 * p2;
     }
 
     /* --- Build animation: play once when in view --- */
